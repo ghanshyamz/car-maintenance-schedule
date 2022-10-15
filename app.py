@@ -1,32 +1,18 @@
-from flask import Flask, render_template, jsonify, request
-# from flask_sqlalchemy import SQLAlchemy
-from flask_restful import Api, Resource
-from pony.orm import Database, set_sql_debug
+from flask import Flask
+from flask_restful import Api
+from pony.orm import set_sql_debug
 
 app = Flask(__name__)
 
 from models import *
 import api_resources
 
-
-# app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
-# db = SQLAlchemy(app)
-
-# @app.route('/')
-# def hello_world():
-#     return render_template('index.html')
-
-
-
-
+# setting up database
 db.bind(provider='sqlite', filename='database.sqlite', create_db=True)
 db.generate_mapping(create_tables=True)
 set_sql_debug(True)
 
-
-
 api = Api(app)
-
 
 # User endpoints
 api.add_resource(api_resources.UserCreate, '/user/create')

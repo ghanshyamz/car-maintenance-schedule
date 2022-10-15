@@ -1,22 +1,23 @@
 
 from datetime import datetime
-from unittest import result
-from warnings import catch_warnings
 from flask_restful import Resource, reqparse
 from pony.orm import db_session, commit, core, select
 from models import User, Car, Servicing
 from pony.orm.serialization import to_dict
 
+# parsing for user data
 user_args = reqparse.RequestParser()
 user_args.add_argument("name", type=str, help="Name of the user",  required=True)
 user_args.add_argument("phone_no", type=str, help="Phone number of the user",  required=True)
 
+# parsing for car data
 car_args = reqparse.RequestParser()
 car_args.add_argument("model", type=str, help="company and model, eg. Maruti 800")
 car_args.add_argument("color", type=str, help="")
 car_args.add_argument("ownerid", type=int, help="Owner's Id")
 car_args.add_argument("purchase_date", type=str, help="Purchase Date in YYYY/MM/DD format")
 
+# parsing for servicing data
 servicing_args = reqparse.RequestParser()
 servicing_args.add_argument("carid", type=int, help="Car Id")
 servicing_args.add_argument("servicing_date", type=str, help="Servicing Date in YYYY/MM/DD format", required=True)
@@ -25,8 +26,6 @@ servicing_args.add_argument("status", type=str, help="Servicing status")
 # user resources
 class UserCreate(Resource):
     def post(self):
-        # content_type = request.headers.get('Content-Type')
-        # if (content_type == 'application/json'):
         args = user_args.parse_args(strict=True)
         with db_session:
             try:
@@ -45,7 +44,7 @@ class UserGetAll(Resource):
     def get(self):
         users = select(u for u in User)[:]
         result = [u.to_dict() for u in users]
-        print(users)
+        
         return { "error" : 0, 'error-message': "" , "Users": result}
 
 class UserGet(Resource):
@@ -56,15 +55,12 @@ class UserGet(Resource):
             result = to_dict(user)
             user_data = result['User'][id]
             car_ids = result['User'][id]['cars']
-
             user_data['Cars'] = [result['Car'][id] for id in car_ids]
             del user_data['cars']
             # converting datetime to string
             for i in user_data['Cars']:
                 if type(i['purchase_date']) is datetime:
                     i['purchase_date'] = i['purchase_date'].strftime(r"%Y/%m/%d")
-
-            print(user_data)
 
         except core.ObjectNotFound as e:
             return { "error" : 1, 'error-message': "Object not found!" , "User": ""}, 404
@@ -106,21 +102,18 @@ class CarGet(Resource):
         try:
             car = Car[id]
             result = to_dict(car)
-            print(result)
             car_data = result['Car'][id]
             del car_data['owner']
             car_data['purchase_date'] = car_data['purchase_date'].strftime(r"%Y/%m/%d")
             servicing_ids = result['Car'][id]['services']
 
             car_data['Servicing'] = [result['Servicing'][id] for id in servicing_ids]
-            print(car_data)
             del car_data['color']
             del car_data['services']
+
             for servicing in car_data['Servicing']:
                 del servicing['car']
                 servicing['servicing_date'] = servicing['servicing_date'].strftime(r"%Y/%m/%d")
-
-            print(car_data)
 
         except core.ObjectNotFound as e:
             return { "error" : 1, 'error-message': "Object not found!" , "Cars": ""}, 404
