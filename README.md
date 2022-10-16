@@ -1,6 +1,6 @@
 # car-maintenance-schedule
 Flask-RESTful API
-
+```
 API:
 All POST APIs to be receive and send JSON data
 1. /user/create [POST]
@@ -124,3 +124,4 @@ c. Returns:
         }
       ]
   }
+```
