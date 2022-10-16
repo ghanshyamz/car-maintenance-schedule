@@ -21,12 +21,14 @@ car_args.add_argument("purchase_date", type=str, help="Purchase Date in YYYY/MM/
 servicing_args = reqparse.RequestParser()
 servicing_args.add_argument("carid", type=int, help="Car Id")
 servicing_args.add_argument("servicing_date", type=str, help="Servicing Date in YYYY/MM/DD format", required=True)
-servicing_args.add_argument("status", type=str, help="Servicing status")
+servicing_args.add_argument("status", choices=('finished', 'unfinished', 'scheduled'), help="Select between ('finished', 'unfinished', 'scheduled') : {error_msg}")
 
 # user resources
 class UserCreate(Resource):
     def post(self):
         args = user_args.parse_args(strict=True)
+        if len(args.phone_no) != 10 or not args.phone_no.isnumeric():
+            return { "error" : 1, 'error-message': "Phone number should be numeric and of 10 digits" }
         with db_session:
             try:
                 User(name= args.name, phone_no=args.phone_no)
@@ -84,7 +86,8 @@ class CarCreate(Resource):
 class CarGetAll(Resource):
     @db_session
     def get(self):
-        cars = select(c for c in Car)[:]
+        args = reqparse.RequestParser().add_argument("userid", type=int, help="User id : {error_msg}", required=True).parse_args(strict=True)
+        cars = select(c for c in Car if c.owner.id == args.userid)[:]
         result = [c.to_dict() for c in cars]
 
         # converting datetime to string
@@ -137,7 +140,8 @@ class ServicingCreate(Resource):
 class ServicingGetAll(Resource):
     @db_session
     def get(self):
-        servicings = select(s for s in Servicing)[:]
+        args = reqparse.RequestParser().add_argument("carid", type=int, help="Car id : {error_msg}", required=True).parse_args(strict=True)
+        servicings = select(s for s in Servicing if s.car.id == args.carid)[:]
         result = [s.to_dict() for s in servicings]
 
         # converting datetime to string
